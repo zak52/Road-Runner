@@ -1,0 +1,460 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2577
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red153\green168\blue186;\red32\green32\blue32;\red88\green118\blue71;
+\red191\green100\blue38;\red109\green109\blue109;\red254\green187\blue91;\red117\green114\blue185;\red86\green132\blue173;
+\red160\green0\blue163;\red128\green63\blue122;\red95\green96\blue103;\red152\green54\blue29;}
+{\*\expandedcolortbl;;\csgenericrgb\c60000\c65882\c72941;\csgenericrgb\c12549\c12549\c12549;\csgenericrgb\c34510\c46275\c27843;
+\csgenericrgb\c74902\c39216\c14902;\csgenericrgb\c42745\c42745\c42745;\csgenericrgb\c99608\c73333\c35686;\csgenericrgb\c45882\c44706\c72549;\csgenericrgb\c33725\c51765\c67843;
+\csgenericrgb\c62745\c0\c63922;\csgenericrgb\c50196\c24706\c47843;\csgenericrgb\c37255\c37647\c40392;\csgenericrgb\c59608\c21176\c11373;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf2 \cb3 __author__ = \cf4 "Zach Kaufman"\
+\
+\cf5 from \cf2 graphviz \cf5 import \cf2 GraphViz\
+\cf5 import \cf2 math\
+\
+\
+\cf6 # Searcher class to use the different search algorithms\
+\cf5 def \cf7 inList\cf2 (element\cf5 , \cf2 listTwo):\
+    \cf5 for \cf2 items \cf5 in \cf2 listTwo:\
+        \cf5 if \cf2 element.nodeName == items.nodeName:\
+            \cf5 return \cf8 bool\cf2 (\cf5 True\cf2 )\
+    \cf5 return \cf8 bool\cf2 (\cf5 False\cf2 )\
+\
+\
+\cf5 def \cf7 sortList\cf2 (unsortedList):\
+    n = \cf8 len\cf2 (unsortedList)\
+    \cf5 for \cf2 i \cf5 in \cf8 range\cf2 (n):\
+        \cf5 for \cf2 j \cf5 in \cf8 range\cf2 (n - i - \cf9 1\cf2 ):\
+            \cf5 if \cf2 unsortedList[j].nodeName > unsortedList[j + \cf9 1\cf2 ].nodeName:\
+                unsortedList[j]\cf5 , \cf2 unsortedList[j + \cf9 1\cf2 ] = unsortedList[j + \cf9 1\cf2 ]\cf5 , \cf2 unsortedList[j]\
+\
+\
+\cf5 class \cf2 Searcher:\
+    \cf6 # Goal node that we are currently searching for\
+    \cf2 goal = []\
+\
+    \cf6 # Start Node that we will start are search on\
+    \cf2 start = \cf5 None\
+\
+    \cf6 # Ongoing list of the Nodes we open\
+    \cf2 openList = []\
+\
+    \cf6 # Name of File that we load the map from\
+    \cf2 fileName = \cf4 ""\
+\
+    \cf6 # list of the nodes that we loaded from the file\
+    \cf2 mapList = \cf5 None\
+\
+    \cf2 searchMethod = \cf4 ""\
+\
+    \cf2 hMode = \cf4 ""\
+\
+    \cf2 verboseType = \cf8 bool\cf2 (\cf5 False\cf2 )\
+\
+    vizGraph = \cf5 None\
+\
+    \cf2 numberOfNodes = \cf9 0\
+\
+    \cf2 nodesinMap = []\
+\
+    numberofSearchNodes = \cf9 0\
+\
+    \cf2 path = []\
+\
+    nodeExpansion = []\
+\
+    currentNode = \cf5 None\
+\
+    \cf2 frontierMaxSize = \cf9 0\
+\
+    \cf2 maxDepth = \cf9 0\
+\
+    \cf2 endNode = \cf5 None\
+\
+    \cf2 pathCost = \cf9 0\
+\
+    \cf6 # Creates a new searcher class\
+    # Takes in file and reads the lines from it and assigns it to MapList\
+    \cf5 def \cf10 __init__\cf2 (\cf11 self\cf5 , \cf2 searchtype\cf5 , \cf2 filen\cf5 , \cf2 htype\cf5 , \cf2 verbosemode):\
+        \cf11 self\cf2 .fileName = filen\
+        \cf11 self\cf2 .searchMethod = searchtype\
+        \cf11 self\cf2 .hMode = htype\
+        \cf11 self\cf2 .verboseType = verbosemode\
+        \cf5 with \cf8 open\cf2 (\cf11 self\cf2 .fileName) \cf5 as \cf2 f:\
+            map = f.readlines()\
+        \cf6 # Strips the elements of maplist for any blank space\
+        \cf11 self\cf2 .mapList = [x.strip() \cf5 for \cf2 x \cf5 in \cf2 map]\
+        \cf8 print\cf2 (\cf4 "File loaded!"\cf2 )\
+\
+\
+    \cf6 # Simple Search Node class\
+    # Class imbeded inside the Searcher Class\
+    \cf5 class \cf2 SearchNode:\
+        \cf6 # Creates a new search node with the Nodename,\
+        # Path cost and the children of that given node\
+        \cf5 def \cf10 __init__\cf2 (\cf11 self\cf5 , \cf2 nodeName\cf5 , \cf2 pathCost\cf5 , \cf2 depth\cf5 , \cf2 parent):\
+            \cf11 self\cf2 .nodeName = nodeName\
+            \cf11 self\cf2 .value = pathCost\
+            \cf11 self\cf2 .nodeChildren = []\
+            \cf11 self\cf2 .depth = depth\
+            \cf11 self\cf2 .parentNode = parent\
+\
+    \cf5 def \cf7 go\cf2 (\cf11 self\cf2 ):\
+        \cf5 if \cf11 self\cf2 .searchMethod.upper() == \cf4 "BREADTH"\cf2 :\
+            \cf11 self\cf2 .breadthSearch()\
+        \cf5 elif \cf11 self\cf2 .searchMethod.upper() == \cf4 "DEPTH"\cf2 :\
+            \cf11 self\cf2 .depthSearch()\
+        \cf5 elif \cf11 self\cf2 .searchMethod.upper() == \cf4 "BEST"\cf2 :\
+            \cf11 self\cf2 .bestSearch()\
+        \cf5 elif \cf11 self\cf2 .searchMethod.upper() == \cf4 "A*"\cf2 :\
+            \cf11 self\cf2 .aStarSearch()\
+        \cf5 else\cf2 :\
+            \cf8 print\cf2 (\cf4 "Not a valid Search Method"\cf2 )\
+\
+    \cf5 def \cf7 countNodes\cf2 (\cf11 self\cf2 ):\
+        \cf5 for \cf2 line \cf5 in \cf11 self\cf2 .mapList:\
+            line = line.replace(\cf4 '\cf5 \\'\cf4 '\cf5 , \cf4 ''\cf2 ).replace(\cf4 '['\cf5 , \cf4 ''\cf2 ).replace(\cf4 ']'\cf5 , \cf4 ''\cf2 ).replace(\cf4 ' '\cf5 , \cf4 ''\cf2 ).strip(\cf4 '()'\cf2 )\
+            node = line.split(\cf4 ','\cf2 )\
+            \cf5 if \cf2 node[\cf9 0\cf2 ] \cf5 not in \cf11 self\cf2 .nodesinMap:\
+                \cf11 self\cf2 .nodesinMap.append(node[\cf9 0\cf2 ])\
+            \cf5 if \cf2 node[\cf9 1\cf2 ] \cf5 not in \cf11 self\cf2 .nodesinMap:\
+                \cf11 self\cf2 .nodesinMap.append(node[\cf9 1\cf2 ])\
+            count = \cf9 0\
+            \cf5 for \cf12 i \cf5 in \cf11 self\cf2 .nodesinMap:\
+                count = count + \cf9 1\
+            \cf11 self\cf2 .numberOfNodes = count\
+\
+    \cf5 def \cf7 breadthSearch\cf2 (\cf11 self\cf2 ):\
+        \cf8 print\cf2 (\cf4 "BREADTH search: from "\cf5 , \cf11 self\cf2 .start.nodeName\cf5 , \cf4 "to"\cf5 , \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName)\
+        \cf11 self\cf2 .currentNode = \cf11 self\cf2 .start\
+        \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        \cf11 self\cf2 .frontierMaxSize = \cf8 len\cf2 (\cf11 self\cf2 .openList)\
+        \cf5 while \cf11 self\cf2 .currentNode.nodeName != \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+            \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+                \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+            \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+            \cf5 if \cf11 self\cf2 .verboseType:\
+                \cf8 print\cf2 (\cf4 "\cf5 \\n\cf4 Exploring Node: "\cf5 , \cf11 self\cf2 .currentNode.nodeName)\
+            \cf5 if \cf11 self\cf2 .currentNode.nodeName \cf5 not in \cf11 self\cf2 .nodeExpansion:\
+                \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .getSuccessor(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .insertToOpen(\cf4 "END"\cf5 , \cf11 self\cf2 .currentNode.nodeChildren\cf5 , \cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .currentNode = \cf11 self\cf2 .openList[\cf9 0\cf2 ]\
+\
+        \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+            \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        pathNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .path.append(\cf11 self\cf2 .currentNode.nodeName)\
+        \cf5 while \cf2 pathNode.nodeName != \cf11 self\cf2 .start.nodeName:\
+            \cf11 self\cf2 .path.insert(\cf9 0\cf5 , \cf2 pathNode.parentNode.nodeName)\
+            pathNode = pathNode.parentNode\
+        \cf11 self\cf2 .endNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .pathCost = \cf11 self\cf2 .endNode.value\
+        \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+        \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .endNode)\
+        \cf11 self\cf2 .printSearchStats()\
+\
+    \cf5 def \cf7 depthSearch\cf2 (\cf11 self\cf2 ):\
+        \cf8 print\cf2 (\cf4 "DEPTH search: from "\cf5 , \cf11 self\cf2 .start.nodeName\cf5 , \cf4 "to"\cf5 , \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName)\
+        \cf11 self\cf2 .currentNode = \cf11 self\cf2 .start\
+        \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        \cf11 self\cf2 .frontierMaxSize = \cf8 len\cf2 (\cf11 self\cf2 .openList)\
+        \cf5 while \cf11 self\cf2 .currentNode.nodeName != \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+            \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+                \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+            \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+            \cf5 if \cf11 self\cf2 .verboseType:\
+                \cf8 print\cf2 (\cf4 "\cf5 \\n\cf4 Exploring Node: "\cf5 , \cf11 self\cf2 .currentNode.nodeName)\
+            \cf5 if \cf11 self\cf2 .currentNode.nodeName \cf5 not in \cf11 self\cf2 .nodeExpansion:\
+                \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .getSuccessor(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .insertToOpen(\cf4 "FRONT"\cf5 , \cf11 self\cf2 .currentNode.nodeChildren\cf5 , \cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .currentNode = \cf11 self\cf2 .openList[\cf9 0\cf2 ]\
+\
+        \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+            \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        pathNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .path.append(\cf11 self\cf2 .currentNode.nodeName)\
+        \cf5 while \cf2 pathNode.nodeName != \cf11 self\cf2 .start.nodeName:\
+            \cf11 self\cf2 .path.insert(\cf9 0\cf5 , \cf2 pathNode.parentNode.nodeName)\
+            pathNode = pathNode.parentNode\
+        \cf11 self\cf2 .endNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .pathCost = \cf11 self\cf2 .endNode.value\
+        \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+        \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .endNode)\
+        \cf11 self\cf2 .printSearchStats()\
+\
+    \cf5 def \cf7 bestSearch\cf2 (\cf11 self\cf2 ):\
+        \cf8 print\cf2 (\cf4 "BEST search: from "\cf5 , \cf11 self\cf2 .start.nodeName\cf5 , \cf4 "to"\cf5 , \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName)\
+        \cf11 self\cf2 .currentNode = \cf11 self\cf2 .start\
+        \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        \cf11 self\cf2 .frontierMaxSize = \cf9 1\
+        \cf5 while \cf11 self\cf2 .currentNode.nodeName != \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+            \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+                \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+            \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+            \cf5 if \cf11 self\cf2 .verboseType:\
+                \cf8 print\cf2 (\cf4 "\cf5 \\n\cf4 Exploring Node: "\cf5 , \cf11 self\cf2 .currentNode.nodeName)\
+            \cf5 if \cf11 self\cf2 .currentNode.nodeName \cf5 not in \cf11 self\cf2 .nodeExpansion:\
+                \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .getSuccessor(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .insertToOpen(\cf4 "INORDER"\cf5 , \cf11 self\cf2 .currentNode.nodeChildren\cf5 , \cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .currentNode = \cf11 self\cf2 .openList[\cf9 0\cf2 ]\
+\
+        \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+            \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        pathNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .path.append(\cf11 self\cf2 .currentNode.nodeName)\
+        \cf5 while \cf2 pathNode.nodeName != \cf11 self\cf2 .start.nodeName:\
+            \cf11 self\cf2 .path.insert(\cf9 0\cf5 , \cf2 pathNode.parentNode.nodeName)\
+            pathNode = pathNode.parentNode\
+        \cf11 self\cf2 .endNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .pathCost = \cf11 self\cf2 .endNode.value\
+        \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+        \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .endNode)\
+        \cf11 self\cf2 .printSearchStats()\
+\
+    \cf5 def \cf7 aStarSearch\cf2 (\cf11 self\cf2 ):\
+        \cf8 print\cf2 (\cf4 "A* search: from "\cf5 , \cf11 self\cf2 .start.nodeName\cf5 , \cf4 "to"\cf5 , \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName)\
+        \cf11 self\cf2 .currentNode = \cf11 self\cf2 .start\
+        \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        \cf11 self\cf2 .frontierMaxSize = \cf9 1\
+        \cf5 while \cf11 self\cf2 .currentNode.nodeName != \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+            \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+                \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+            \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+            \cf5 if \cf11 self\cf2 .verboseType:\
+                \cf8 print\cf2 (\cf4 "\cf5 \\n\cf4 Exploring Node: "\cf5 , \cf11 self\cf2 .currentNode.nodeName)\
+            \cf5 if \cf11 self\cf2 .currentNode.nodeName \cf5 not in \cf11 self\cf2 .nodeExpansion:\
+                \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .getSuccessor(\cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .insertToOpen(\cf4 "H-FUNCTION"\cf5 , \cf11 self\cf2 .currentNode.nodeChildren\cf5 , \cf11 self\cf2 .currentNode)\
+            \cf11 self\cf2 .currentNode = \cf11 self\cf2 .openList[\cf9 0\cf2 ]\
+\
+        \cf5 if \cf11 self\cf2 .currentNode.depth > \cf11 self\cf2 .maxDepth:\
+            \cf11 self\cf2 .maxDepth = \cf11 self\cf2 .currentNode.depth\
+        pathNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .path.append(\cf11 self\cf2 .currentNode.nodeName)\
+        \cf5 while \cf2 pathNode.nodeName != \cf11 self\cf2 .start.nodeName:\
+            \cf11 self\cf2 .path.insert(\cf9 0\cf5 , \cf2 pathNode.parentNode.nodeName)\
+            pathNode = pathNode.parentNode\
+        \cf11 self\cf2 .endNode = \cf11 self\cf2 .currentNode\
+        \cf11 self\cf2 .pathCost = \cf11 self\cf2 .endNode.value\
+        \cf11 self\cf2 .numberofSearchNodes = \cf11 self\cf2 .numberofSearchNodes + \cf9 1\
+        \cf11 self\cf2 .nodeExpansion.append(\cf11 self\cf2 .endNode)\
+        \cf11 self\cf2 .printSearchStats()\
+\
+    \cf5 def \cf7 printSearchStats\cf2 (\cf11 self\cf2 ):\
+        \cf11 self\cf2 .countNodes()\
+        \cf8 print\cf2 (\cf4 "\cf5 \\n\\n\cf4 -------------------------------------------------"\cf2 )\
+        \cf8 print\cf2 (\cf4 "SEARCH SUMMARY STATS:"\cf2 )\
+        \cf8 print\cf2 (\cf4 "Search Type: "\cf5 , \cf11 self\cf2 .searchMethod\cf5 , \cf4 " Map File: "\cf5 ,\
+              \cf11 self\cf2 .fileName\cf5 , \cf4 "Total Nodes in Graph: "\cf5 , \cf11 self\cf2 .numberOfNodes)\
+        \cf8 print\cf2 (\cf4 "Start Node: "\cf5 , \cf11 self\cf2 .start.nodeName\cf5 ,\
+              \cf4 "; Goal Node(s): "\cf5 , \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName)\
+        \cf8 print\cf2 (\cf4 "Search total of "\cf5 , \cf11 self\cf2 .numberofSearchNodes\cf5 ,\
+              \cf4 " out of total of "\cf5 , \cf11 self\cf2 .numberOfNodes\cf5 , \cf4 " in graph"\cf2 )\
+        \cf8 print\cf2 (\cf4 "Ended at Node: "\cf5 , \cf11 self\cf2 .endNode.nodeName\cf5 , \cf4 " with path cost: "\cf5 , \cf11 self\cf2 .pathCost)\
+        \cf8 print\cf2 (\cf4 "Path ("\cf5 , \cf8 len\cf2 (\cf11 self\cf2 .path)\cf5 , \cf4 "): "\cf5 , \cf11 self\cf2 .path)\
+        \cf8 print\cf2 (\cf4 "Frontier size: Average= "\cf5 , \cf8 len\cf2 (\cf11 self\cf2 .openList) / \cf11 self\cf2 .frontierMaxSize\
+              \cf5 , \cf4 "Max size ="\cf5 , \cf11 self\cf2 .frontierMaxSize)\
+        \cf8 print\cf2 (\cf4 "Depth of Search: Average="\cf5 , \cf8 len\cf2 (\cf11 self\cf2 .openList) / \cf11 self\cf2 .maxDepth\cf5 ,\
+              \cf4 ";Max Depth = "\cf5 , \cf11 self\cf2 .maxDepth)\
+\
+        \cf8 print\cf2 (\cf4 "Order of Node Expansion:"\cf5 , \cf13 end\cf2 =\cf4 " ["\cf2 )\
+        \cf5 for \cf2 nodes \cf5 in \cf11 self\cf2 .nodeExpansion:\
+            \cf8 print\cf2 (nodes.nodeName\cf5 , \cf13 end \cf2 =\cf4 ","\cf2 )\
+        \cf8 print\cf2 (\cf4 "]"\cf2 )\
+\
+    \cf6 # Sets the start of the search function and the end of the search function\
+    # Creates a the Graph Vizual and adds the starting node to the open list\
+    \cf5 def \cf7 setStartGoal\cf2 (\cf11 self\cf5 , \cf2 startNode\cf5 , \cf2 goalNode):\
+        \cf6 # Sets the start Node\
+        \cf11 self\cf2 .start = \cf11 self\cf2 .SearchNode(startNode\cf5 , \cf9 0\cf5 , \cf9 0\cf5 , None\cf2 )\
+        \cf6 # my insertToOpen function takes a list so I made a dummylist just to keep it consistent\
+        # and add my starting node to my open list\
+        \cf2 startList = [\cf11 self\cf2 .start]\
+        \cf11 self\cf2 .goal.append(\cf11 self\cf2 .SearchNode(goalNode\cf5 , None, None, None\cf2 ))\
+        \cf11 self\cf2 .insertToOpen(\cf4 "FRONT"\cf5 , \cf2 startList\cf5 , \cf4 ''\cf2 )\
+        \cf6 # Calls the function to create the graph vizual with startnode and goal node\
+        \cf11 self\cf2 .createGraphViz(startNode\cf5 , \cf2 goalNode)\
+        \cf6 # sets the goal node that we are searching for\
+        \cf8 print\cf2 (\cf4 "Start = "\cf5 , \cf2 startNode\cf5 , \cf4 "Goal = "\cf5 , \cf2 goalNode)\
+\
+    \cf6 # Creates the starting graph vizual and sets the\
+    # start and goal nodes on the graph\
+    \cf5 def \cf7 createGraphViz\cf2 (\cf11 self\cf5 , \cf2 startLabel\cf5 , \cf2 goalLabel):\
+        \cf11 self\cf2 .vizGraph = GraphViz()\
+        \cf11 self\cf2 .vizGraph.loadGraphFromFile(\cf11 self\cf2 .fileName)\
+        \cf11 self\cf2 .vizGraph.plot()\
+        \cf11 self\cf2 .vizGraph.markStart(startLabel)\
+        \cf11 self\cf2 .vizGraph.markGoal(goalLabel)\
+\
+    \cf6 # Takes in a list of node and adds them to open list\
+    # Checks to see if a duplicate node is already in the list\
+    # Checks to see if list is empty\
+    # adds list, at the front, and the end, and "in order"\
+    # depending on value of the node given\
+    \cf5 def \cf7 insertToOpen\cf2 (\cf11 self\cf5 , \cf2 addStyle\cf5 , \cf2 addToList\cf5 , \cf2 parentNode):\
+        \cf6 # gets rid of the node that we are currently exploring\
+        \cf5 if \cf11 self\cf2 .verboseType \cf5 and \cf2 parentNode != \cf4 ''\cf2 :\
+            \cf8 print\cf2 (\cf4 "Inserting new Children:"\cf5 , \cf13 end\cf2 =\cf4 " "\cf2 )\
+            index = \cf9 0\
+            \cf5 for \cf2 children \cf5 in \cf2 parentNode.nodeChildren:\
+                \cf5 if not \cf2 inList(children\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    \cf8 print\cf2 (children.nodeName\cf5 , \cf13 end\cf2 =\cf4 ", "\cf2 )\
+                    index = index + \cf9 1\
+            \cf5 if \cf11 self\cf2 .frontierMaxSize < index:\
+                \cf11 self\cf2 .frontierMaxSize = index\
+        \cf5 if \cf2 inList(parentNode\cf5 , \cf11 self\cf2 .openList):\
+            \cf11 self\cf2 .openList.remove(parentNode)\
+\
+        \cf6 # Checks to see if we are inserting children at the front of the open list\
+        \cf5 if \cf2 addStyle == \cf4 "FRONT"\cf2 :\
+            \cf6 # iterates through elements of the addToList\
+            \cf2 counter = \cf8 len\cf2 (addToList) - \cf9 1\
+            \cf5 while \cf2 counter >= \cf9 0\cf2 :\
+                \cf6 # Checks to make sure that there isn't already a given node in the list\
+                \cf5 if \cf2 inList(addToList[counter]\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(addToList[counter]\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    removeNode = \cf5 None\
+                    for \cf2 node \cf5 in \cf11 self\cf2 .openList:\
+                        \cf5 if \cf2 node.nodeName == addToList[counter].nodeName:\
+                            removeNode = node\
+                    \cf11 self\cf2 .openList.remove(removeNode)\
+                \cf5 if not \cf2 inList(addToList[counter]\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    \cf11 self\cf2 .openList.insert(\cf9 0\cf5 , \cf2 addToList[counter])\
+                counter = counter - \cf9 1\
+\
+        \cf6 # checks to see if we are inserting children at the end of the open list\
+        \cf5 elif \cf2 addStyle == \cf4 "END"\cf2 :\
+            \cf6 # iterates through elements of the addToList\
+            \cf5 for \cf2 child \cf5 in \cf2 addToList:\
+                \cf6 # Checks to make sure that there isn't already a given node in the list\
+                \cf5 if not \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    \cf11 self\cf2 .openList.append(child)\
+\
+\
+        \cf5 elif \cf2 addStyle == \cf4 "H-FUNCTION"\cf2 :\
+            \cf5 for \cf2 child \cf5 in \cf2 addToList:\
+                \cf6 # Checks to make sure that there isn't already a given node in the list\
+                \cf5 if \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    removeNode = \cf5 None\
+                    for \cf2 node \cf5 in \cf11 self\cf2 .openList:\
+                        \cf5 if \cf2 node.nodeName == child.nodeName:\
+                            removeNode = node\
+                    \cf5 if \cf2 (\cf11 self\cf2 .gethSLD(removeNode.nodeName) + \cf8 int\cf2 (removeNode.value)\
+                            > \cf11 self\cf2 .gethSLD(child.nodeName) + \cf8 int\cf2 (child.value)):\
+                        \cf11 self\cf2 .openList.remove(removeNode)\
+                \cf5 if not \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    counter = \cf9 0\
+                    \cf6 # Iterates through open list to check the different values of the list\
+                    \cf5 for \cf2 nodes \cf5 in \cf11 self\cf2 .openList:\
+                        \cf6 # checks to see if the value of the given node is less than any of the nodes in\
+                        # the open list and then places it in it's correct spot\
+                        \cf5 if \cf2 (\cf11 self\cf2 .gethSLD(child.nodeName) + \cf8 int\cf2 (child.value)) \\\
+                                < (\cf11 self\cf2 .gethSLD(nodes.nodeName) + \cf8 int\cf2 (nodes.value)):\
+                            \cf11 self\cf2 .openList.insert(counter\cf5 , \cf2 child)\
+                            \cf5 break\
+                        \cf2 counter = counter + \cf9 1\
+                    \cf6 # Checks to see if the node was placed in open list,\
+                    # if not placed at the end of the open list\
+                    \cf5 if not \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                        \cf11 self\cf2 .openList.append(child)\
+\
+        \cf6 # if not inserting at end or front then inserting children in order of open list\
+        \cf5 else\cf2 :\
+            \cf6 # iterates through elements of the addToList\
+            \cf5 for \cf2 child \cf5 in \cf2 addToList:\
+                \cf6 # Checks to make sure that there isn't already a given node in the list\
+                \cf5 if \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    removeNode = \cf5 None\
+                    for \cf2 node \cf5 in \cf11 self\cf2 .openList:\
+                        \cf5 if \cf2 node.nodeName == child.nodeName:\
+                            removeNode = node\
+                    \cf5 if \cf2 (removeNode.value > child.value):\
+                        \cf11 self\cf2 .openList.remove(removeNode)\
+                \cf5 if not \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                    counter = \cf9 0\
+                    \cf6 # Iterates through open list to check the different values of the list\
+                    \cf5 for \cf2 nodes \cf5 in \cf11 self\cf2 .openList:\
+                        \cf6 # checks to see if the value of the given node is less than any of the nodes in\
+                        # the open list and then places it in it's correct spot\
+                        \cf5 if \cf2 child.value < nodes.value:\
+                            \cf11 self\cf2 .openList.insert(counter\cf5 , \cf2 child)\
+                            \cf5 break\
+                        \cf2 counter = counter + \cf9 1\
+                    \cf6 # Checks to see if the node was placed in open list,\
+                    # if not placed at the end of the open list\
+                    \cf5 if not \cf2 inList(child\cf5 , \cf11 self\cf2 .openList) \cf5 and not \cf2 inList(child\cf5 , \cf11 self\cf2 .nodeExpansion):\
+                        \cf11 self\cf2 .openList.append(child)\
+        \cf5 if \cf11 self\cf2 .verboseType:\
+            \cf11 self\cf2 .showOpenList()\
+\
+    \cf6 # takes in a SearchNode and a list of tupples and checks to see\
+    # if the SearchNode name is in the list\
+\
+    # gives all the children, Successors that are connect, to the parent node that\
+    # is given and returns a printed list in Alphabetical order of the children nodes\
+    # also assigns those children nodes to the parent node\
+    \cf5 def \cf7 getSuccessor\cf2 (\cf11 self\cf5 , \cf2 parentNode):\
+        addNode = \cf5 None\
+        \cf6 # Loops through the map list and makes an easy list to read\
+        \cf5 for \cf2 line \cf5 in \cf11 self\cf2 .mapList:\
+            line = line.replace(\cf4 '\cf5 \\'\cf4 '\cf5 , \cf4 ''\cf2 ).replace(\cf4 '['\cf5 , \cf4 ''\cf2 ).replace(\cf4 ']'\cf5 , \cf4 ''\cf2 ).replace(\cf4 ' '\cf5 , \cf4 ''\cf2 ).strip(\cf4 '()'\cf2 )\
+            node = line.split(\cf4 ','\cf2 )  \cf6 # clean comma-separated values. that is a list now\
+            # checks to see which elements in the new list are connect to the parent node\
+            \cf5 if \cf2 parentNode.nodeName \cf5 in \cf2 node:\
+                \cf6 # checks to see if parent node is the first or second element\
+                # then assigns whichever it is not to be the children\
+                \cf5 if \cf2 node[\cf9 0\cf2 ] == parentNode.nodeName:\
+                    addNode = \cf11 self\cf2 .SearchNode(node[\cf9 1\cf2 ]\cf5 , \cf8 int\cf2 (node[\cf9 2\cf2 ]) + parentNode.value\cf5 ,\
+                                              \cf2 parentNode.depth + \cf9 1\cf5 , \cf2 parentNode)\
+                \cf5 elif \cf2 node[\cf9 1\cf2 ] == parentNode.nodeName:\
+                    addNode = \cf11 self\cf2 .SearchNode(node[\cf9 0\cf2 ]\cf5 , \cf8 int\cf2 (node[\cf9 2\cf2 ]) + parentNode.value\cf5 ,\
+                                              \cf2 parentNode.depth + \cf9 1\cf5 , \cf2 parentNode)\
+                parentNode.nodeChildren.append(addNode)  \cf6 # adds new children node to parent\
+        # sorts the list parentNode's children list in alphabetical order\
+        \cf2 sortList(parentNode.nodeChildren)\
+        \cf6 # prints out the list of children\
+\
+    # Bubble sorts a list of SearchNodes\
+\
+    # Calculates the hSLD and gives it back to user\
+    \cf5 def \cf7 gethSLD\cf2 (\cf11 self\cf5 , \cf2 giveNodeName):\
+        givenNodeCoordinates = \cf5 None\
+        \cf2 goalNodeCoordinates = \cf5 None\
+        for \cf2 line \cf5 in \cf11 self\cf2 .mapList:\
+            line = line.replace(\cf4 '\cf5 \\'\cf4 '\cf5 , \cf4 ''\cf2 ).replace(\cf4 '['\cf5 , \cf4 ''\cf2 ).replace(\cf4 ']'\cf5 , \cf4 ''\cf2 ).replace(\cf4 ' '\cf5 , \cf4 ''\cf2 ).strip(\cf4 '()'\cf2 )\
+            node = line.split(\cf4 ','\cf2 )\
+            \cf5 if \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName \cf5 in \cf2 node:\
+                \cf5 if \cf2 node[\cf9 0\cf2 ] == \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+                    goalNodeCoordinates = (node[\cf9 3\cf2 ]\cf5 , \cf2 node[\cf9 4\cf2 ])\
+                \cf5 elif \cf2 node[\cf9 1\cf2 ] == \cf11 self\cf2 .goal[\cf9 0\cf2 ].nodeName:\
+                    goalNodeCoordinates = (node[\cf9 5\cf2 ]\cf5 , \cf2 node[\cf9 6\cf2 ])\
+            \cf5 if \cf2 giveNodeName \cf5 in \cf2 node:\
+                \cf5 if \cf2 node[\cf9 0\cf2 ] == giveNodeName:\
+                    givenNodeCoordinates = (node[\cf9 3\cf2 ]\cf5 , \cf2 node[\cf9 4\cf2 ])\
+                \cf5 elif \cf2 node[\cf9 1\cf2 ] == giveNodeName:\
+                    givenNodeCoordinates = (node[\cf9 5\cf2 ]\cf5 , \cf2 node[\cf9 6\cf2 ])\
+        hSLD = math.sqrt((\cf8 int\cf2 (goalNodeCoordinates[\cf9 0\cf2 ]) - \cf8 int\cf2 (givenNodeCoordinates[\cf9 0\cf2 ])) ** \cf9 2\
+                         \cf2 + (\cf8 int\cf2 (goalNodeCoordinates[\cf9 1\cf2 ]) - \cf8 int\cf2 (givenNodeCoordinates[\cf9 1\cf2 ])) ** \cf9 2\cf2 )\
+        hSLD = \cf8 round\cf2 (hSLD\cf5 , \cf9 2\cf2 )\
+        \cf5 return \cf2 hSLD\
+\
+    \cf6 # returns the current open list\
+    \cf5 def \cf7 showOpenList\cf2 (\cf11 self\cf2 ):\
+        \cf8 print\cf2 (\cf4 ""\cf2 )\
+        \cf5 for \cf2 nodes \cf5 in \cf11 self\cf2 .openList:\
+            \cf8 print\cf2 (\cf4 "["\cf5 , \cf2 nodes.nodeName\cf5 , \cf4 ", "\cf5 , \cf2 nodes.depth\cf5 , \cf4 ", "\cf5 , \cf2 nodes.value\cf5 ,\
+                  \cf4 ", "\cf5 , \cf11 self\cf2 .gethSLD(nodes.nodeName)\cf5 , \cf4 ", "\cf5 , \cf8 round\cf2 (\cf8 int\cf2 (nodes.value) + \cf11 self\cf2 .gethSLD(nodes.nodeName)\cf5 , \cf9 2\cf2 )\cf5 , \cf13 end \cf2 = \cf4 "],"\cf2 )\
+\
+\
+\cf5 if \cf2 __name__ == \cf4 '__main__'\cf2 :\
+    z = Searcher(\cf4 'A*'\cf5 , \cf4 '50test.txt'\cf5 , \cf4 'hSLD'\cf5 , \cf8 bool\cf2 (\cf5 False\cf2 ))\
+    z.setStartGoal(\cf4 "AG"\cf5 , \cf4 "F"\cf2 )\
+    z.go()\
+\
+\
+}
